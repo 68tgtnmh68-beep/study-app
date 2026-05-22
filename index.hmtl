@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的日系溫習 App</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts (圓潤黑體，增加日系感) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind 自定義設定 (粉藍色系) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    colors: {
+                        pastel: {
+                            blue: '#B5CBE8',
+                            light: '#EBF2FA',
+                            bg: '#F8FAFC',
+                            text: '#475569',
+                            dark: '#64748B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 隱藏捲軸但保留滾動功能，讓畫面更像 App */
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; background-color: #e2e8f0; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateX(10px); }
+    </style>
+</head>
+<body class="flex justify-center min-h-screen text-pastel-text">
+
+    <!-- App 容器 (模擬手機螢幕寬度) -->
+    <div id="app" class="w-full max-w-md bg-pastel-bg min-h-screen relative shadow-2xl overflow-x-hidden flex flex-col">
+        
+        <!-- 頂部導航與考試倒數 -->
+        <header class="p-6 pb-2 relative z-10">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-slate-700 tracking-wider">
+                    <span v-if="!activeSubject">溫習手帳</span>
+                    <span v-else>
+                        <button @click="activeSubject = null" class="mr-3 text-pastel-blue hover:text-pastel-dark transition">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        {{ activeSubject.name }}
+                    </span>
+                </h1>
+                
+                <!-- 考試日期倒數 (放於角落) -->
+                <div class="bg-pastel-blue text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm flex items-center gap-2">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    DSE 倒數 <span class="font-bold">{{ daysLeft }}</span> 日
+                </div>
+            </div>
+            
+            <p v-if="!activeSubject" class="text-pastel-dark text-sm mb-2">今天想專注學習哪一科呢？</p>
+        </header>
+
+        <!-- 主要內容區 -->
+        <main class="flex-1 p-6 pt-2 overflow-y-auto pb-10">
+            
+            <!-- 首頁：7個科目清單 -->
+            <transition name="fade" mode="out-in">
+                <div v-if="!activeSubject" key="home" class="grid grid-cols-2 gap-4">
+                    <div v-for="(subject, index) in subjects" :key="index" 
+                         @click="activeSubject = subject"
+                         class="bg-white p-5 rounded-3xl shadow-sm hover:shadow-md transition cursor-pointer border border-pastel-light flex flex-col items-center justify-center gap-3 active:scale-95"
+                         :class="index === 6 ? 'col-span-2 flex-row' : ''">
+                        <div class="w-12 h-12 rounded-full bg-pastel-light flex items-center justify-center text-pastel-blue text-xl">
+                            <i :class="subject.icon"></i>
+                        </div>
+                        <span class="font-medium text-slate-600">{{ subject.name }}</span>
+                    </div>
+                </div>
+
+                <!-- 科目詳情頁：4大功能清單 -->
+                <div v-else key="subject" class="space-y-4">
+                    <div v-for="(feature, idx) in features" :key="idx"
+                         @click="openFeature(feature.name)"
+                         class="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition cursor-pointer border border-pastel-light flex items-center gap-4 active:scale-95">
+                        <div class="w-12 h-12 rounded-2xl bg-pastel-light flex items-center justify-center text-pastel-blue text-xl shrink-0">
+                            <i :class="feature.icon"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-slate-700">{{ feature.name }}</h3>
+                            <p class="text-xs text-pastel-dark mt-1">{{ feature.desc }}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-pastel-light text-sm"></i>
+                    </div>
+                </div>
+            </transition>
+
+        </main>
+
+        <!-- 底部裝飾線條 (日系簡約感) -->
+        <div class="h-2 w-1/3 bg-pastel-blue mx-auto rounded-t-full mb-2 opacity-50"></div>
+    </div>
+
+    <!-- Vue 應用程式邏輯 -->
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // 目標考試日期 (可自行更改)
+                    examDate: new Date('2025-04-01T00:00:00'),
+                    activeSubject: null,
+                    subjects: [
+                        { name: '中國語文', icon: 'fa-solid fa-book' },
+                        { name: '英國語文', icon: 'fa-solid fa-language' },
+                        { name: '數學必修', icon: 'fa-solid fa-calculator' },
+                        { name: '經濟學', icon: 'fa-solid fa-chart-line' },
+                        { name: '中國歷史', icon: 'fa-solid fa-scroll' },
+                        { name: '世界歷史', icon: 'fa-solid fa-globe' },
+                        { name: '公民與社會', icon: 'fa-solid fa-users' } // 第7科
+                    ],
+                    features: [
+                        { name: '歷年 Past Paper', icon: 'fa-regular fa-folder-open', desc: '參考歷屆試題與評分參考' },
+                        { name: 'Flash Card 閃卡', icon: 'fa-regular fa-clone', desc: '利用間隔重複加深記憶' },
+                        { name: 'AI 專屬教學', icon: 'fa-solid fa-robot', desc: '不懂就問，AI 導師隨時解答' },
+                        { name: '各科研讀重點', icon: 'fa-solid fa-pen-nib', desc: '精華筆記與網上資源整合' }
+                    ]
+                }
+            },
+            computed: {
+                daysLeft() {
+                    const today = new Date();
+                    const diffTime = this.examDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays > 0 ? diffDays : 0;
+                }
+            },
+            methods: {
+                openFeature(featureName) {
+                    // 這裡可以後續加上點擊功能後的邏輯，目前先彈出提示
+                    alert(`即將開啟：${this.activeSubject.name} 的 ${featureName}`);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
